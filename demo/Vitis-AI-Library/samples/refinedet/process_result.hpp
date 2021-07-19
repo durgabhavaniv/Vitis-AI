@@ -30,22 +30,45 @@ static cv::Mat process_result(cv::Mat &image,
     xmax = std::min(std::max(xmax, 0), img.cols);
     ymin = std::min(std::max(ymin, 0), img.rows);
     ymax = std::min(std::max(ymax, 0), img.rows);
+    cpx[i]  = (xmax[i] + xmin[i]) / 2;
+    cpy[i]  = (ymax[i] + ymin[i]) / 2;
+    dim[i]    = (xmax[i] - xmin[i]) + (ymax[i] - ymin[i]);
 
     LOG_IF(INFO, is_jpeg) << "RESULT2: "
-                          << "\t" << xmin << "\t" << ymin << "\t" << xmax
-                          << "\t" << ymax << "\t" << score << "\n";
-    auto label = 2;
-    if (label == 1) {
-      cv::rectangle(img, cv::Point(xmin, ymin), cv::Point(xmax, ymax),
-                    cv::Scalar(0, 255, 0), 1, 1, 0);
-    } else if (label == 2) {
-      cv::rectangle(img, cv::Point(xmin, ymin), cv::Point(xmax, ymax),
-                    cv::Scalar(255, 0, 0), 1, 1, 0);
-    } else if (label == 3) {
-      cv::rectangle(img, cv::Point(xmin, ymin), cv::Point(xmax, ymax),
-                    cv::Scalar(0, 0, 255), 1, 1, 0);
-    }
+                          << "\txmin:" << xmin[i] << "\tymin:" << ymin[i] << "\txmax:" << xmax[i]
+                          << "\tymax:" << ymax[i] << "\tcpx:" << cpx[i] << "\tcpy:" << cpy[i] << "\tdim:" << dim[i] << "\t" << i << "\t" << score << "\n";
+    i++;
   }
-
+  for (j=0;j<i;j++)
+  {
+    sd = 0;
+    min = 0;
+    for (k=0;k<i;k++)
+    {
+      if (k!=j){
+        min = (dim[j]>dim[k])?dim[k]:dim[j];
+        dis = (sqrt(pow(cpx[k] - cpx[j], 2) + pow(cpy[k] - cpy[j], 2) * 1.0)) / min;
+        LOG_IF(INFO, is_jpeg) << "distance"<< "\tdis:" << dis;
+        if (dis <= 0.5){
+          sd++;
+          break;
+        }
+      }
+    }
+    if (sd>0)
+      label = 3;
+    else
+      label = 1;
+    if (label == 1) { // Green
+      cv::rectangle(img, cv::Point(xmin[j], ymin[j]), cv::Point(xmax[j], ymax[j]),
+                    cv::Scalar(0, 255, 0), 1, 1, 0);
+    } else if (label == 2) {  // Blue
+      cv::rectangle(img, cv::Point(xmin[j], ymin[j]), cv::Point(xmax[j], ymax[j]),
+                    cv::Scalar(255, 0, 0), 1, 1, 0);
+    } else if (label == 3) {   // Red
+      cv::rectangle(img, cv::Point(xmin[j], ymin[j]), cv::Point(xmax[j], ymax[j]),
+                    cv::Scalar(0, 0, 255), 1, 1, 0);
+    }    
+  }
   return img;
 }
